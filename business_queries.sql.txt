@@ -1,0 +1,51 @@
+- Total revenue
+
+SELECT 
+    SUM(total_order_value) AS Total_Revenue
+FROM ecommerce_data;
+
+- Revenue by Segment
+
+SELECT 
+    Segment,
+    COUNT(DISTINCT customer_unique_id) AS Total_Customers,
+    SUM(total_order_value) AS Segment_Revenue
+FROM ecommerce_data
+GROUP BY Segment
+ORDER BY Segment_Revenue DESC;
+
+- Top 10 Customers
+
+SELECT *
+FROM (
+    SELECT 
+        customer_unique_id,
+        SUM(total_order_value) AS Total_Spent,
+        RANK() OVER (ORDER BY SUM(total_order_value) DESC) AS Spending_Rank
+    FROM ecommerce_data
+    GROUP BY customer_unique_id
+) ranked_customers
+WHERE Spending_Rank <= 10;
+
+- Monthly Growth
+
+WITH MonthlyRevenue AS (
+    SELECT 
+        CONCAT(order_year, '-', FORMAT(order_month, '00')) AS YearMonth,
+        SUM(total_order_value) AS Revenue
+    FROM ecommerce_data
+    GROUP BY order_year, order_month
+)
+SELECT 
+    YearMonth,
+    Revenue,
+    LAG(Revenue) OVER (ORDER BY YearMonth) AS Previous_Month_Revenue,
+    ROUND(
+        (Revenue - LAG(Revenue) OVER (ORDER BY YearMonth)) 
+        * 100.0 / 
+        LAG(Revenue) OVER (ORDER BY YearMonth),
+        2
+    ) AS Growth_Percentage
+FROM MonthlyRevenue;
+
+
